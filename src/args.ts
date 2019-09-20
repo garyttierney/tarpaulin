@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import fetch from 'node-fetch';
 
 // Workaround for a GH bug: https://github.com/actions/toolkit/issues/127
 //
@@ -25,14 +26,51 @@ function inputBoolean(name: string): boolean {
     }
 }
 
-export async function getOptions(): Promise<TarpaulinOptions> {
-    const version = getInput('version');
+interface ActionInputs {
+    version: string,
+    releaseEndpoint: string,
+}
 
-    // @TODO - should we look at https://github.com/xd009642/tarpaulin/releases/latest
-    //         if the user specifies "latest"?
+async function determineVersion(releaseEndpoint: string, requestedVersion: string) {
+
+}
+
+/**
+ * Determine the download version for the ZIP archive containing the `cargo-tarpaulin` binaries.
+ *
+ * @param requestedVersion The Git tag of the tarpaulin revision to get a download URL for. May be any valid Git tag,
+ * or a special-cased `latest`.
+ */
+async function getDownloadUrl(releaseEndpoint: string, requestedVersion: string): Promise<string> {
+
+        const releaseInfoRequest = await fetch(releaseEndpoint);
+        const releaseInfo = await releaseInfoRequest.json();
+        const releaseVersion = releaseInfo["tag_name"];
+
+        return releaseInfo["https://github.com/xd009642/tarpaulin/releases/download/0.8.6/cargo-tarpaulin-0.8.6-travis.tar.gz"];
+}
+
+export async function getOptions(): Promise<TarpaulinOptions> {
+    const requestedVersion = getInput('version');
+    let version = requestedVersion;
+
+    if (requestedVersion.match(/latest/i)) {
+        core.info(`[tarpaulin] using latest release`);
+
+        const releaseInfoResponse = await fetch
+        const releaseInfo = await fetch("https://api.github.com/repos/xd009642/tarpaulin/releases/latest")
+            .then(response => response.json());
+
+        if ("tag_name" in releaseInfo) {
+            version = releaseInfo["tag_name"];
+        }
+
+        core.info(`[tarpaulin] latest release is ${version}`);
+    }
 
     return {
         version,
+        downloadUrl,
     };
 }
 
